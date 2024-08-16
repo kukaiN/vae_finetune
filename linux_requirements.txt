@@ -1,0 +1,102 @@
+torch==2.4.0 #caformer
+torchvision>=0.5.0 #caformer
+torchaudio #caformer
+transformers
+accelerate>=0.25.0
+datasets>=2.0.0
+
+pytorch_optimizer
+diffusers
+
+timm>=0.6.12 #caformer
+aiofiles==23.2.1
+
+einops==0.6.1 #caformer
+fairscale==0.4.13
+ftfy==6.1.1
+
+# logger that I use, optionally install tensorboard
+wandb >= 0.15.11
+
+#omegaconf==2.3.0
+onnx>=1.15.0  #1.14.1
+onnxruntime-gpu>=1.16 #1.16.0
+protobuf==3.20.3
+
+safetensors==0.4.2
+toml==0.10.2
+scipy==1.11.4
+
+
+ImageHash>=4.2.1 # similarity
+rich # logging tool
+
+
+loguru
+tqdm
+matplotlib
+PySide6==6.6.2
+qdarkstyle
+cloudscraper
+scikit-learn #caformer
+numpy<=2.0
+seaborn 
+pandas
+imagesize==1.4.1
+
+#tensorflow==2.8.0 # Window's GPU supports ends after 2.10
+#tensorflow-io==0.31.0 #loading images
+
+opencv-python>=4.7.0.71
+pillow
+#xformers==0.0.24 #installed separately
+
+lpips >= 0.1.4
+dghs-imgutils[gpu] #dghs version 0.4.1
+
+#altair==4.2.2
+#dadaptation==3.1
+#diffusers[torch]==0.25.0
+#easygui==0.98.3
+
+#gradio==3.50.2
+#huggingface-hub #==0.20.1
+# for loading Diffusers' SDXL
+#invisible-watermark==0.2.0
+#lion-pytorch==0.0.6
+#lycoris_lora==2.0.2
+# for BLIP captioning
+# requests==2.28.2
+# timm==0.6.12
+# fairscale==0.4.13
+# for WD14 captioning (tensorflow)
+# tensorflow==2.14.0
+# for WD14 captioning (onnx)
+
+# onnxruntime==1.16.0
+# this is for onnx:
+# tensorboard==2.14.1
+
+# open clip for SDXL
+#open-clip-torch==2.20.0
+#opencv-python==4.7.0.68
+#prodigyopt==1.0
+#pytorch-lightning==1.9.0
+#rich==13.4.1
+
+#timm==0.6.12
+#tk==0.1.0
+
+#transformers==4.36.2
+#voluptuous==0.13.1
+#wandb==0.15.11
+
+#verified
+#einops==0.6.1 #caformer
+#torch>=1.12 #caformer
+#torchvision>=0.5.0 #caformer
+#timm==0.6.12 #caformer
+
+#einops
+# xformers --no-dependencies #caformer
+#tensorflow[gpu] #swinv2

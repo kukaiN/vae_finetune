@@ -1,0 +1,9 @@
+.venv/
+venv/
+*.pyc
+*__pycache__*
+config.py
+outputs/
+pretrained_model
+wandb/
+*.log

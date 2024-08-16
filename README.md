@@ -3,6 +3,12 @@
  
  ### Comment by Wasabi:
  
+ How to run code:
+ ```
+ (start venv)
+ accelerate launch --num_cpu_threads_per_process=1 vae_finetune.py
+ ```
+ 
  code was initially copied from the comment from the diffuser's github issue: https://github.com/huggingface/diffusers/issues/3726
  
  In the github issue, there's people having problems running the code with mixed precision (fp16 and bf16). I also faced this mixed precision issue so I made some modifications that made it work. I'll list the solution to fixing the mixed precision.
