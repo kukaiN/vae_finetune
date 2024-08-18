@@ -28,14 +28,15 @@
 - Ubuntu 24.04
 - Python 3.10
 - RTX3090 (with cuda + cudnn)
-- Relevant lib ver: torch==2.2.0+cu121, xformers==0.0.24, accelerate==0.25.0 
+- Relevant lib ver: torch==2.4.0+cu121, xformers==0.0.27.post2, accelerate==0.33.0 
 - The rest of libraries are listed in the requirements.txt (which is a ported requirement from a different project I'm working on)
 
 Note: I didn't test on windows, but I also have a windows pc with an RTX3090 with pretty much same spec, so let me know if I need to test something on windows
 
  
 ### My modifications for testing:
-- added CAME optimizer (similar to AdamW, but it uses confidence for estimating the steps, also lowers the VRAM overhead compared to base AdamW)
-- use my own dataset (collection of anime images to see if it produces better smaller detailed images)
-
+- added xformers (i didn't transfer the case when xformer is disabled so I'll update this within a few days
+- added CAME optimizer fom pytorch_optimizer (similar to AdamW, but it uses confidence for estimating the steps, also lowers the VRAM overhead compared to base AdamW)
+- using my own dataset (collection of anime images to see if it produces better smaller detailed images)
+- added accelerator's unwrap_model function directly cause it's causing problems for higher diffuser and accelerate versions. (accelerator.unwrap_model(vae) --> acc_unwrap_model(vae))
  
