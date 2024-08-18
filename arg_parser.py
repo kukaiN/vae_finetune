@@ -238,4 +238,7 @@ def parse_basic_args(parser):
     parser.add_argument("--max_grad_norm", default=1.0, type=float, help="Max gradient norm.")
     parser.add_argument("--push_to_hub", action="store_true", help="Whether or not to push the model to the Hub.")
     parser.add_argument("--hub_token", type=str, default=None, help="The token to use to push to the Model Hub.")
+
+    parser.add_argument("--save_for_SD", action="store_true", help="Whether to additionally save the model under a SD compatible format")
+    
     return parser
