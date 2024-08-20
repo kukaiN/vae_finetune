@@ -239,6 +239,13 @@ def parse_basic_args(parser):
     parser.add_argument("--push_to_hub", action="store_true", help="Whether or not to push the model to the Hub.")
     parser.add_argument("--hub_token", type=str, default=None, help="The token to use to push to the Model Hub.")
 
+
+    # added arguments
     parser.add_argument("--save_for_SD", action="store_true", help="Whether to additionally save the model under a SD compatible format")
+    parser.add_argument("--train_only_decoder", action="store_false", help="Whether to only train the decoder of the vae, default is false")
+    parser.add_argument("--diffusers_xformers", action="store_false",help="enable xformers")
+    
+    
+    
     
     return parser

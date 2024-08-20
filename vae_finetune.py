@@ -144,6 +144,46 @@ def acc_unwrap_model(model):
     else:
         return model
 
+# I asked chatgpt-4o to give me ideas for better vae (with better reconstruction of smaller details, aka hands and faces)
+
+
+# Function to split the image into patches
+def extract_patches(image, patch_size, stride):
+    # Unfold the image into patches
+    patches = image.unfold(2, patch_size, stride).unfold(3, patch_size, stride)
+    # Reshape to get a batch of patches
+    patches = patches.contiguous().view(image.size(0), image.size(1), -1, patch_size, patch_size)
+    return patches
+
+# Patch-Based MSE Loss
+def patch_based_mse_loss(real_images, recon_images, patch_size=32, stride=16):
+    real_patches = extract_patches(real_images, patch_size, stride)
+    recon_patches = extract_patches(recon_images, patch_size, stride)
+    mse_loss = F.mse_loss(real_patches, recon_patches)
+    return mse_loss
+
+# Patch-Based LPIPS Loss (using the pre-defined LPIPS model)
+def patch_based_lpips_loss(lpips_model, real_images, recon_images, patch_size=32, stride=16):
+    with torch.no_grad():
+        real_patches = extract_patches(real_images, patch_size, stride)
+        recon_patches = extract_patches(recon_images, patch_size, stride)
+        
+        lpips_loss = 0
+        # Iterate over each patch and accumulate LPIPS loss
+        for i in range(real_patches.size(2)):  # Loop over number of patches
+            real_patch = real_patches[:, :, i, :, :].contiguous()
+            recon_patch = recon_patches[:, :, i, :, :].contiguous()
+            patch_lpips_loss = lpips_model(real_patch, recon_patch).mean()
+            
+            # Handle non-finite values
+            if not torch.isfinite(patch_lpips_loss):
+                patch_lpips_loss = torch.tensor(0, device=real_patch.device)
+            
+            lpips_loss += patch_lpips_loss
+
+    return lpips_loss / real_patches.size(2)  # Normalize by the number of patches
+
+
 if is_wandb_available():
     import wandb
     wandb.login(key=config.wandb_api_key)
@@ -305,12 +345,24 @@ def parse_args():
     #args.kl_scale
     args.push_to_hub = False
     #hub_token
+    args.lpips_scale = 5e-1
+    args.kl_scale = 1e-6
+    args.lpips_start = 50001
+    
+    
 
     #following are new parameters
     args.use_came = False
     args.diffusers_xformers = True
     args.save_for_SD = True
     args.save_precision = "fp16"
+    args.train_only_decoder = True
+    
+    args.patch_loss = True
+    args.patch_size = 64
+    args.patch_stride = 32
+    
+    
 
     # Sanity checks
     if args.dataset_name is None and args.train_data_dir is None:
@@ -424,7 +476,7 @@ def main():
     # https://stackoverflow.com/questions/75802877/issues-when-using-huggingface-accelerate-with-fp16
     # load params with fp32, which is auto casted later to mixed precision, may be needed for ema
     #
-    # from the overflow's answer, it links to the diffuser's sdxl training script example and in the code there's another link
+    # from the stackoverflow's answer, it links to the diffuser's sdxl training script example and in the code there's another link
     # which points to https://github.com/huggingface/diffusers/pull/6514#discussion_r1447020705
     # which may suggest we need to do all this casting before passing the learnable params to the optimizer
     for param in vae.parameters():
@@ -530,7 +582,14 @@ def main():
 
     if args.gradient_checkpointing:
         vae.enable_gradient_checkpointing()
-
+    
+    if args.train_only_decoder:
+        # freeze the encoder weights
+        for param in vae.encoder.parameters():
+            param.requires_grad = False
+        # set encoder to eval mode
+        vae.encoder.eval()
+    
     if args.scale_lr:
         args.learning_rate = (args.learning_rate * args.gradient_accumulation_steps * args.train_batch_size * accelerator.num_processes)
 
@@ -679,10 +738,13 @@ def main():
     )
 
     (
-        vae, vae.encoder, vae.decoder, optimizer, train_dataloader, test_dataloader, lr_scheduler
+        vae, vae.decoder, optimizer, train_dataloader, test_dataloader, lr_scheduler
     ) = accelerator.prepare(
-        vae, vae.encoder, vae.decoder, optimizer, train_dataloader, test_dataloader, lr_scheduler
+        vae, vae.decoder, optimizer, train_dataloader, test_dataloader, lr_scheduler
     )
+    
+    if not args.train_only_decoder:
+        vae.encoder = accelerator.prepare(vae.encoder)
 
     if args.use_ema:
         ema_vae.to(accelerator.device, dtype=weight_dtype)
@@ -789,15 +851,30 @@ def main():
                     kl_loss = posterior.kl().mean()  # .to(weight_dtype)
 
                     # mse_loss = F.mse_loss(pred.float(), target.float(), reduction="mean")
-                    mse_loss = F.mse_loss(pred, target, reduction="mean")
-                    with torch.no_grad():
-                        lpips_loss = lpips_loss_fn(pred, target).mean()
-                        if not torch.isfinite(lpips_loss):
-                            lpips_loss = torch.tensor(0)
+                    
+                    if args.patch_loss:
+                        # patched loss
+                        mse_loss = patch_based_mse_loss(real_images, recon_images, patch_size, stride)
+                        lpips_loss = patch_based_lpips_loss(lpips_loss_fn, real_images, recon_images, patch_size, stride)
 
-                    loss = (
-                            mse_loss + args.lpips_scale * lpips_loss + args.kl_scale * kl_loss
-                    )  # .to(weight_dtype)
+                    else:
+                        # default loss
+                        mse_loss = F.mse_loss(pred, target, reduction="mean")
+                        with torch.no_grad():
+                            lpips_loss = lpips_loss_fn(pred, target).mean()
+                            if not torch.isfinite(lpips_loss):
+                                lpips_loss = torch.tensor(0)
+                            
+                    if args.train_only_decoder:
+                        # remove kl term from loss, bc when we only train the decoder, the latent is untouched
+                        # and the kl loss describes the distribution of the latent
+                        loss = (mse_loss 
+                                + args.lpips_scale*lpips_loss)  # .to(weight_dtype)
+                    else:
+                        loss = (mse_loss 
+                                + args.lpips_scale*lpips_loss 
+                                + args.kl_scale*kl_loss)  # .to(weight_dtype)
+                        
 
                     if not torch.isfinite(loss):
                         pred_mean = pred.mean()

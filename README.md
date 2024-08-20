@@ -39,4 +39,9 @@ Note: I didn't test on windows, but I also have a windows pc with an RTX3090 wit
 - added CAME optimizer fom pytorch_optimizer (similar to AdamW, but it uses confidence for estimating the steps, also lowers the VRAM overhead compared to base AdamW)
 - using my own dataset (collection of anime images to see if it produces better smaller detailed images)
 - added accelerator's unwrap_model function directly cause it's causing problems for higher diffuser and accelerate versions. (accelerator.unwrap_model(vae) --> acc_unwrap_model(vae))
- 
+- added patched mse loss
+- added train only decoder option (kl loss is removed when it's only the decoder training)
+
+
+### Initial results:
+- 8/20/2024, trained sdxl_vae for ~50k steps, with batch 2 and grad accum 3 (all illustration/anime). Results were intresting in that the colors were fixed and were less whitewashed
