@@ -6,6 +6,7 @@
  How to run code:
  ```
  (start venv)
+ source .venv/bin/activate
  accelerate launch --num_cpu_threads_per_process=1 vae_finetune.py
  ```
  
