@@ -192,18 +192,19 @@ logger = get_logger(__name__, log_level="INFO")
 
 
 @torch.no_grad()
-def log_validation(args, test_dataloader, vae, accelerator, weight_dtype, epoch=0, repo_id=None, curr_step = 0):
+def log_validation(args, test_dataloader, vae, accelerator, weight_dtype, epoch=0, repo_id=None, curr_step = 0, max_validation_sample=20):
     logger.info("Running validation... ")
 
     vae_model = acc_unwrap_model(vae)
     images = []
     
-    for _, sample in enumerate(test_dataloader):
-        x = sample["pixel_values"].to(weight_dtype)
-        reconstructions = vae_model(x).sample
-        images.append(
-            torch.cat([sample["pixel_values"].cpu(), reconstructions.cpu()], axis=0)
-        )
+    for i, sample in enumerate(test_dataloader):
+        if i < max_validation_sample:
+            x = sample["pixel_values"].to(weight_dtype)
+            reconstructions = vae_model(x).sample
+            images.append(
+                torch.cat([sample["pixel_values"].cpu(), reconstructions.cpu()], axis=0)
+            )
 
     for tracker in accelerator.trackers:
         if tracker.name == "tensorboard":
@@ -313,17 +314,17 @@ def parse_args():
     # args.revision
     #args.dataset_name = None
     #args.dataset_config_name
-    args.train_data_dir = r"/home/wasabi/Documents/Projects/data/vae/sample"
-    #args.train_data_dir = r"/home/wasabi/Documents/Projects/data/vae/train"
+    #args.train_data_dir = r"/home/wasabi/Documents/Projects/data/vae/sample"
+    args.train_data_dir = r"/home/wasabi/Documents/Projects/data/vae/train"
     args.test_data_dir = r"/home/wasabi/Documents/Projects/data/vae/test"
     #args.image_column
-    args.output_dir = r"outputs/models"
+    args.output_dir = r"outputs/models_v1"
     #args.huggingface_repo
     #cache_dir =
     args.seed = 420
     args.resolution = 1024
     args.train_batch_size = 2 # batch 2 was the best for a single rtx3090
-    args.num_train_epochs = 1
+    args.num_train_epochs = 10
     args.gradient_accumulation_steps = 3
     args.gradient_checkpointing = True
     args.learning_rate = 1e-07
@@ -334,7 +335,7 @@ def parse_args():
     args.logging_dir = r"outputs/vae_log"
     args.mixed_precision = 'bf16'
     args.report_to = None #'wandb'
-    args.checkpointing_steps = 50# return to 5000
+    args.checkpointing_steps = 5000# return to 5000
     #args.checkpoints_total_limit
     #args.resume_from_checkpoint
     args.test_samples = 20
@@ -347,12 +348,12 @@ def parse_args():
     #hub_token
     args.lpips_scale = 5e-1
     args.kl_scale = 1e-6
-    args.lpips_start = 50001
+    args.lpips_start = 50001 # this doesn't do anything?
     
     
 
     #following are new parameters
-    args.use_came = False
+    args.use_came = True
     args.diffusers_xformers = True
     args.save_for_SD = True
     args.save_precision = "fp16"
@@ -725,9 +726,11 @@ def main():
         num_workers=n_workers  # args.train_batch_size*accelerator.num_processes,
     )
 
+
+    # we use a batch size of 1 bc we want to see samples side by side, which is made by the validation sample function
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset, shuffle=False, collate_fn=collate_fn,
-        batch_size=args.train_batch_size, num_workers=1,  # args.train_batch_size*accelerator.num_processes,
+        batch_size=1, num_workers=1,  # args.train_batch_size*accelerator.num_processes,
     )
 
     lr_scheduler = get_scheduler(
@@ -814,6 +817,10 @@ def main():
     )
     progress_bar.set_description("Steps")
 
+    if args.patch_loss:
+        patch_size = args.patch_size
+        stride = args.patch_stride
+
     lpips_loss_fn = lpips.LPIPS(net="alex").to(accelerator.device, dtype=weight_dtype)
     lpips_loss_fn.requires_grad_(False)
     lpips_loss_fn.eval()  # added
@@ -854,8 +861,8 @@ def main():
                     
                     if args.patch_loss:
                         # patched loss
-                        mse_loss = patch_based_mse_loss(real_images, recon_images, patch_size, stride)
-                        lpips_loss = patch_based_lpips_loss(lpips_loss_fn, real_images, recon_images, patch_size, stride)
+                        mse_loss = patch_based_mse_loss(target, pred, patch_size, stride)
+                        lpips_loss = patch_based_lpips_loss(lpips_loss_fn, target, pred, patch_size, stride)
 
                     else:
                         # default loss
