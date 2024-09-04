@@ -7,3 +7,4 @@ outputs/
 pretrained_model
 wandb/
 *.log
+.DS_store
