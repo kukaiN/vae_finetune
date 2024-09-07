@@ -787,7 +787,7 @@ def main():
         ema_vae = accelerator.prepare(ema_vae)
 
     for epoch in range(first_epoch, args.num_train_epochs):
-        with torch.amp.autocast(device_type="cuda", dtype=torch.float16):#accelerator.autocast():
+        with torch.amp.autocast("cuda", dtype=torch.float16):#accelerator.autocast():
             vae.train()
             accelerator.wait_for_everyone()
             train_loss = 0.0
