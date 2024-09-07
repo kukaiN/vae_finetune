@@ -800,7 +800,7 @@ def main():
                         progress_bar.update(1)
                     continue
                 with accelerator.accumulate(vae):
-                    target = batch["pixel_values"]  # .to(accelerator.device, dtype=weight_dtype)
+                    target = batch["pixel_values"].to(accelerator.device, dtype=weight_dtype)
                     # https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/autoencoder_kl.py
 
                     if accelerator.num_processes > 1:
