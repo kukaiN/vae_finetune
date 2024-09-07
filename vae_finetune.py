@@ -417,10 +417,11 @@ def main():
     for param in vae.parameters():
         if param.requires_grad:
             # dtype conversion updated in place, updated to conversion code from gpt4
-            if accelerator.mixed_precision != "fp16":
-                param.data.copy_(param.data.to(torch.float32))
-            else:
-                param.data.copy_(param.data.to(torch.float16))
+            #if accelerator.mixed_precision != "fp16":
+            #    param.data.copy_(param.data.to(torch.float32))
+            #else:
+            #    param.data.copy_(param.data.to(torch.float16))
+            param.data.copy_(param.data.to(weight_dtype))
 
     # Load vae
     if args.use_ema:
