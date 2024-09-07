@@ -808,14 +808,14 @@ def main():
                         z = posterior.sample()
                         pred = vae.module.decode(z).sample
                     else:
-                        posterior = vae.encode(target).latent_dist  # .to(weight_dtype)
+                        posterior = vae.encode(target).latent_dist.to(weight_dtype)
                         # z = mean                      if posterior.mode()
                         # z = mean + variable*epsilon   if posterior.sample()
-                        z = posterior.sample()  # .to(weight_dtype) # Not mode()
+                        z = posterior.sample().to(weight_dtype) # Not mode()
                         pred = vae.decode(z).sample
 
                     # pred = pred#.to(dtype=weight_dtype)
-                    kl_loss = posterior.kl().mean()  # .to(weight_dtype)
+                    kl_loss = posterior.kl().mean().to(weight_dtype)
 
                     # mse_loss = F.mse_loss(pred.float(), target.float(), reduction="mean")
                     
