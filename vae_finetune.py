@@ -767,8 +767,8 @@ def main():
         vae, vae.decoder, optimizer, train_dataloader, test_dataloader, lr_scheduler
     )
     lpips_loss_fn = accelerator.prepare(lpips_loss_fn)
-    if not args.train_only_decoder:
-        vae.encoder = accelerator.prepare(vae.encoder)
+    #if not args.train_only_decoder:
+    vae.encoder = accelerator.prepare(vae.encoder)
 
     if args.use_ema:
         ema_vae.to(accelerator.device, dtype=weight_dtype)
