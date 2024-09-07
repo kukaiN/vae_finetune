@@ -8,10 +8,30 @@ import torch.nn.functional as F
 
 from convert_to_SD import convert_vae_state_dict
 
-output_dir = r"G:\models\SD_webui\VAE"
+output_dir = r"/home/wasabi/Documents/Projects/ComfyUI/models/vae"
 path_1 = os.path.join(output_dir, "sdxl_vae.safetensors")
-path_2 = os.path.join(output_dir, "diffusion_pytorch_model_converted8_29.safetensors")
-#path_2 = os.path.join(output_dir, "diffusion_pytorch_model_translated3.safetensors")
+#path_1 = os.path.join(output_dir, "diffusion_pytorch_model.safetensors")
+path_2 = os.path.join(output_dir, "diffusion_pytorch_model.safetensors")
+path_3 =os.path.join(output_dir, "diffusion_pt_model_8_31.safetensors")
+path_2 = os.path.join(output_dir, "diffusion_pt_model_8_31.safetensors")
+update_vae2_with_new_name = False
+
+devices = torch.cuda.device_count()
+if devices > 0:
+    # Choose a specific device (e.g., GPU 0)
+    device = torch.device(f'cuda:{0}')
+else:
+    # If no CUDA devices are available, default to CPU
+    device = torch.device('cpu')
+
+if device.type == "cuda":
+    torch.cuda.empty_cache()
+if device.type == "xpu":
+    torch.xpu.empty_cache()
+if device.type == "mps":
+    torch.mps.empty_cache()
+
+print(f"working on {device.type}")
 
 
 
@@ -27,11 +47,14 @@ vae_1 = load_file(path_1)
 #fp16_weights = {k: v.to(torch.float16) for k, v in loaded_weights.items()}
 # Load the saved weights from the safetensors file
 vae_2 = load_file(path_2)
-
+#vae_2.metadata=None
 vae_2 = convert_vae_state_dict(vae_2)
 
-vae_1 = {k: v.to(torch.float16) for k, v in vae_1.items()}
-vae_2 = {k: v.to(torch.float16) for k, v in vae_2.items()}
+vae_1 = {k: v.to(torch.float16).cpu() for k, v in vae_1.items()}
+vae_2 = {k: v.to(torch.float16).cpu() for k, v in vae_2.items()}
+
+torch.cuda.empty_cache()
+
 
 def calculate_sha256(filename):
     hash_sha256 = hashlib.sha256()
@@ -80,8 +103,9 @@ def get_hashes(model):
 
     return hash_sha256[0:10], hash_md5[0:10]
 
-#key_to_modify = random.choice(list(vae_2.keys()))
-#vae_2[key_to_modify] += torch.randn_like(vae_2[key_to_modify]) + 1e-7
+#key_to_modify = list(vae_2.keys())
+#for k in key_to_modify:
+#    vae_2[k] += torch.randn_like(vae_2[k]) + 1e-7
 
 hash_sha256_1, hash_md5_1 = get_hashes(vae_1)
 hash_sha256_2, hash_md5_2 = get_hashes(vae_2)
@@ -90,10 +114,11 @@ sha256_1 = sha256(path_1, 'vae')
 sha256_2 = sha256(path_2, 'vae')
 
 # Compare the saved weights with the current model's weights
-for key in vae_1:
+for key in vae_1.keys():
+    break
     if key in vae_2:
         weight_1 = vae_1[key]
-        weight_2 = vae_2[key].to(torch.float16)
+        weight_2 = vae_2[key]
         if not torch.equal(weight_1, weight_2):
             mean_abs_diff = torch.mean(torch.abs(weight_1 - weight_2)).item()
             cosine_sim = F.cosine_similarity(weight_1.flatten(), weight_2.flatten(), dim=0).item()
@@ -105,12 +130,11 @@ for key in vae_1:
             print(f"Layer {key} matches.")
     else:
         print(f"Key {key} not found in saved weights.")
+    torch.cuda.empty_cache()
         
 print(f"SHA256 HASH: {hash_sha256_1}, {hash_sha256_2}")
 print(f"md5 hash: {hash_md5_1}, {hash_md5_2}")   
-print(f"SDXL's SHA256: {sha256_1}, {sha256_2}")     
+print(f"SDXL's SHA256: {sha256_1}, {sha256_2}")  
 
-
-path_3 =os.path.join(output_dir, "diffusion_pytorch_model_converted8_29.safetensors")
-
-save_file(vae_2, path_3, None)
+if update_vae2_with_new_name:
+    save_file(vae_2, path_3, None)

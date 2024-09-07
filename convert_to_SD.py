@@ -80,3 +80,9 @@ def convert_vae_state_dict(vae_state_dict):
                 new_state_dict[k] = reshape_weight_for_sd(v)
 
     return new_state_dict
+
+def main():
+    path = r"/home/wasabi/Documents/Projects/ComfyUI/models/vae"
+
+if __name__ == "__main__":
+    main()
