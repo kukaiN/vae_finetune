@@ -333,7 +333,7 @@ def get_all_images_in_folder(folder, image_ext=(".png", ".jpeg", ".jpg", ".PNG",
 def main():
     # clear any chache
     torch.cuda.empty_cache()
-
+    debug = True
     args = parse_args()
 
     # if not os.path.exists(os.path.join(args.dataset_name, "train\\metadata.jsonl")):
@@ -787,7 +787,7 @@ def main():
         ema_vae = accelerator.prepare(ema_vae)
 
     for epoch in range(first_epoch, args.num_train_epochs):
-        with accelerator.autocast():
+        with torch.cuda.amp.autocast():#accelerator.autocast():
             vae.train()
             accelerator.wait_for_everyone()
             train_loss = 0.0
@@ -848,6 +848,17 @@ def main():
                         pred_mean = pred.mean()
                         target_mean = target.mean()
                         logger.info("\nWARNING: non-finite loss, ending training ")
+                    
+                    if debug and step < 10:
+                        print(f"loss dtype: {loss.dtype}")
+                        print(f"pred dtype: {pred.dtype}")
+                        print(f"target dtype: {target.dtype}")
+                        print(f"z dtype: {z.dtype}")
+                        print(f"kl_loss dtype: {kl_loss.dtype}")
+                        print(f"mse_loss dtype: {mse_loss.dtype}")
+                        print(f"lpips_loss dtype: {lpips_loss.dtype}")
+                        print(f"vae parameters dtype: {[param.dtype for param in vae.parameters()]}")
+
 
                     accelerator.backward(loss)
 
