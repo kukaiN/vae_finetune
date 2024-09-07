@@ -387,6 +387,11 @@ def main():
 
     weight_dtype = get_dtype(accelerator.mixed_precision)
     
+    print(type(accelerator.mixed_precision), accelerator.mixed_precision)
+    
+    print("num process", accelerator.num_processes)
+    print("working with", weight_dtype)
+
     save_for_SD = False
     if args.save_for_SD:
         save_for_SD = True
@@ -411,7 +416,7 @@ def main():
     # which may suggest we need to do all this casting before passing the learnable params to the optimizer
     for param in vae.parameters():
         if param.requires_grad:
-            if weight_dtype != "fp16":
+            if accelerator.mixed_precision != "fp16":
                 param.data = param.to(torch.float32)
             else:
                 param.data = param.to(torch.float16)
@@ -604,18 +609,16 @@ def main():
             raise ValueError(
                 f"--image_column' value '{args.image_column}' needs to be one of: {', '.join(column_names)}"
             )
-
+    
     train_transforms = v2.Compose(
         [
             v2.Resize(
                 args.resolution, interpolation=v2.InterpolationMode.BILINEAR
             ),
             v2.RandomCrop(args.resolution),
-
             #v2.ToTensor(), # this is apparently going to be depreciated in the future, replacing with the following 2 lines
             v2.ToImage(), 
             v2.ToDtype(torch.float32, scale=True),
-            
             v2.Normalize([0.5], [0.5]),
             #v2.ToDtype(weight_dtype)
         ]
@@ -758,8 +761,7 @@ def main():
     lpips_loss_fn = lpips.LPIPS(net="alex").to(accelerator.device, dtype=weight_dtype)
     lpips_loss_fn.requires_grad_(False)
     lpips_loss_fn.eval()  # added
-    print("num porcess", accelerator.num_processes)
-    print("working with", weight_dtype)
+    
 
     (
         vae, vae.decoder, optimizer, train_dataloader, test_dataloader, lr_scheduler
