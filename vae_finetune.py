@@ -242,14 +242,14 @@ def parse_args():
     #args.dataset_config_name
     
     #args.image_column
-    args.output_dir = r"outputs/models_v3"
+    args.output_dir = r"outputs/models_v4_fp16"
     #args.huggingface_repo
     #cache_dir =
     args.seed = 420
     args.resolution = 1024
-    args.train_batch_size = 1 # batch 2 was the best for a single rtx3090
-    args.num_train_epochs = 5
-    args.gradient_accumulation_steps = 2
+    args.train_batch_size = 2 # batch 2 was the best for a single rtx3090
+    args.num_train_epochs = 1
+    args.gradient_accumulation_steps = 3
     args.gradient_checkpointing = True
     args.learning_rate = 1e-04
     args.scale_lr = True
@@ -333,7 +333,7 @@ def get_all_images_in_folder(folder, image_ext=(".png", ".jpeg", ".jpg", ".PNG",
 def main():
     # clear any chache
     torch.cuda.empty_cache()
-    debug = True
+    debug = False
     args = parse_args()
 
     # if not os.path.exists(os.path.join(args.dataset_name, "train\\metadata.jsonl")):
