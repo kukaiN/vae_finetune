@@ -397,13 +397,13 @@ def main():
         save_for_SD = True
         save_dtype = get_dtype(args.save_precision)
         
-    try:
+    try: # keep it as float32, https://github.com/huggingface/diffusers/pull/6119
         vae = AutoencoderKL.from_pretrained(
-            args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision, torch_dtype=weight_dtype
+            args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision, torch_dtype=torch.float32
         )
-    except:
+    except: 
         vae = AutoencoderKL.from_pretrained(
-            args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=weight_dtype
+            args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=torch.float32
         )
 
     vae.requires_grad_(True)
@@ -414,15 +414,15 @@ def main():
     # from the stackoverflow's answer, it links to the diffuser's sdxl training script example and in the code there's another link
     # which points to https://github.com/huggingface/diffusers/pull/6514#discussion_r1447020705
     # which may suggest we need to do all this casting before passing the learnable params to the optimizer
-    if False:
+    if True:
         for param in vae.parameters():
             if param.requires_grad:
                 # dtype conversion updated in place, updated to conversion code from gpt4
                 #if accelerator.mixed_precision != "fp16":
-                #    param.data.copy_(param.data.to(torch.float32))
+                param.data.copy_(param.data.to(torch.float32))
                 #else:
                 #    param.data.copy_(param.data.to(torch.float16))
-                param.data.copy_(param.data.to(weight_dtype))
+                #param.data.copy_(param.data.to(weight_dtype))
     else:
         vae = vae.half()
     # Load vae
