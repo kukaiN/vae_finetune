@@ -803,13 +803,13 @@ def main():
 
                     if accelerator.num_processes > 1:
                         posterior = vae.module.encode(target).latent_dist
-                        z = posterior.sample()
-                        pred = vae.module.decode(z).sample
+                        z = posterior.sample().to(weight_dtype)
+                        pred = vae.module.decode(z).sample.to(weight_dtype)
                     else:
                         posterior = vae.encode(target).latent_dist#.to(weight_dtype)
                         # z = mean                      if posterior.mode()
                         # z = mean + variable*epsilon   if posterior.sample()
-                        z = posterior.sample()#.to(weight_dtype) # Not mode()
+                        z = posterior.sample().to(weight_dtype) # Not mode()
                         pred = vae.decode(z).sample.to(weight_dtype)
 
                     # pred = pred#.to(dtype=weight_dtype)
@@ -819,14 +819,14 @@ def main():
                     
                     if args.patch_loss:
                         # patched loss
-                        mse_loss = patch_based_mse_loss(target, pred, patch_size, stride)
-                        lpips_loss = patch_based_lpips_loss(lpips_loss_fn, target, pred, patch_size, stride)
+                        mse_loss = patch_based_mse_loss(target, pred, patch_size, stride).to(weight_dtype)
+                        lpips_loss = patch_based_lpips_loss(lpips_loss_fn, target, pred, patch_size, stride).to(weight_dtype)
 
                     else:
                         # default loss
-                        mse_loss = F.mse_loss(pred, target, reduction="mean")
+                        mse_loss = F.mse_loss(pred, target, reduction="mean").to(weight_dtype)
                         with torch.no_grad():
-                            lpips_loss = lpips_loss_fn(pred, target).mean()
+                            lpips_loss = lpips_loss_fn(pred, target).mean().to(weight_dtype)
                             if not torch.isfinite(lpips_loss):
                                 lpips_loss = torch.tensor(0)
                                 
