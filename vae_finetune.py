@@ -414,15 +414,17 @@ def main():
     # from the stackoverflow's answer, it links to the diffuser's sdxl training script example and in the code there's another link
     # which points to https://github.com/huggingface/diffusers/pull/6514#discussion_r1447020705
     # which may suggest we need to do all this casting before passing the learnable params to the optimizer
-    for param in vae.parameters():
-        if param.requires_grad:
-            # dtype conversion updated in place, updated to conversion code from gpt4
-            #if accelerator.mixed_precision != "fp16":
-            #    param.data.copy_(param.data.to(torch.float32))
-            #else:
-            #    param.data.copy_(param.data.to(torch.float16))
-            param.data.copy_(param.data.to(weight_dtype))
-
+    if False:
+        for param in vae.parameters():
+            if param.requires_grad:
+                # dtype conversion updated in place, updated to conversion code from gpt4
+                #if accelerator.mixed_precision != "fp16":
+                #    param.data.copy_(param.data.to(torch.float32))
+                #else:
+                #    param.data.copy_(param.data.to(torch.float16))
+                param.data.copy_(param.data.to(weight_dtype))
+    else:
+        vae = vae.half()
     # Load vae
     if args.use_ema:
         try:
@@ -436,11 +438,7 @@ def main():
             ema_vae = AutoencoderKL.from_pretrained(
                 args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=weight_dtype)
         ema_vae = EMAModel(ema_vae.parameters(), model_cls=AutoencoderKL, model_config=ema_vae.config)
-
-
-
-
-
+        ema_vae=ema_vae.half()
         # no need to do special loading
         #for param in ema_vae.parameters():
         #    if param.requires_grad:
@@ -812,7 +810,7 @@ def main():
                         # z = mean                      if posterior.mode()
                         # z = mean + variable*epsilon   if posterior.sample()
                         z = posterior.sample()#.to(weight_dtype) # Not mode()
-                        pred = vae.decode(z).sample
+                        pred = vae.decode(z).sample.to(weight_dtype)
 
                     # pred = pred#.to(dtype=weight_dtype)
                     kl_loss = posterior.kl().mean().to(weight_dtype)
