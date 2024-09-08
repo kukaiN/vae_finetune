@@ -806,7 +806,7 @@ def main():
                         z = posterior.sample()
                         pred = vae.module.decode(z).sample
                     else:
-                        posterior = vae.encode(target)#.latent_dist.to(weight_dtype)
+                        posterior = vae.encode(target).latent_dist#.to(weight_dtype)
                         # z = mean                      if posterior.mode()
                         # z = mean + variable*epsilon   if posterior.sample()
                         z = posterior.sample()#.to(weight_dtype) # Not mode()
