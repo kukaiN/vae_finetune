@@ -247,9 +247,9 @@ def parse_args():
     #cache_dir =
     args.seed = 420
     args.resolution = 1024
-    args.train_batch_size = 2 # batch 2 was the best for a single rtx3090
+    args.train_batch_size = 1 # batch 2 was the best for a single rtx3090
     args.num_train_epochs = 5
-    args.gradient_accumulation_steps = 3
+    args.gradient_accumulation_steps = 2
     args.gradient_checkpointing = True
     args.learning_rate = 1e-04
     args.scale_lr = True
@@ -425,25 +425,18 @@ def main():
                 #param.data.copy_(param.data.to(weight_dtype))
     else:
         vae = vae.half()
-    vae = vae.half()
-    # Load vae
+    #vae = vae.half()
+    # Load ema vae
     if args.use_ema:
         try:
-            #ema_vae = AutoencoderKL.from_pretrained(
-            #   args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision, torch_dtype=torch.float32)
             ema_vae = AutoencoderKL.from_pretrained(
-                args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision, torch_dtype=weight_dtype)
+                args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision, torch_dtype=torch.float32)
         except:
-            #ema_vae = AutoencoderKL.from_pretrained(
-            #    args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=torch.float32)
             ema_vae = AutoencoderKL.from_pretrained(
-                args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=weight_dtype)
+                args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=torch.float32)
         ema_vae = EMAModel(ema_vae.parameters(), model_cls=AutoencoderKL, model_config=ema_vae.config)
-        #ema_vae=ema_vae.half()
         # no need to do special loading
-        #for param in ema_vae.parameters():
-        #    if param.requires_grad:
-        #        param.data = param.to(torch.float32)
+
     # imported xformers from kohya's sdxl train, reading the JP, it seems like vae training can benefit from xformers:
 
     # Diffusers版のxformers使用フラグを設定する関数
@@ -536,9 +529,9 @@ def main():
         accelerator.register_load_state_pre_hook(load_model_hook)
         # Prepare everything with our `accelerator`.
 
-    vae.to(accelerator.device, dtype=weight_dtype)
-    vae.encoder.to(accelerator.device, dtype=weight_dtype)
-    vae.decoder.to(accelerator.device, dtype=weight_dtype)
+    vae.to(accelerator.device)#, dtype=weight_dtype)
+    vae.encoder.to(accelerator.device)#, dtype=weight_dtype)
+    vae.decoder.to(accelerator.device)#, dtype=weight_dtype)
 
     if args.gradient_checkpointing:
         vae.enable_gradient_checkpointing()
