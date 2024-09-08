@@ -841,7 +841,7 @@ def main():
                         target_mean = target.mean()
                         logger.info("\nWARNING: non-finite loss, ending training ")
                     
-                    if debug and step < 10:
+                    if debug and step < 1:
                         print(f"loss dtype: {loss.dtype}")
                         print(f"pred dtype: {pred.dtype}")
                         print(f"target dtype: {target.dtype}")
