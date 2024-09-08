@@ -425,6 +425,7 @@ def main():
                 #param.data.copy_(param.data.to(weight_dtype))
     else:
         vae = vae.half()
+    vae = vae.half()
     # Load vae
     if args.use_ema:
         try:
