@@ -438,7 +438,7 @@ def main():
             ema_vae = AutoencoderKL.from_pretrained(
                 args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=weight_dtype)
         ema_vae = EMAModel(ema_vae.parameters(), model_cls=AutoencoderKL, model_config=ema_vae.config)
-        ema_vae=ema_vae.half()
+        #ema_vae=ema_vae.half()
         # no need to do special loading
         #for param in ema_vae.parameters():
         #    if param.requires_grad:
